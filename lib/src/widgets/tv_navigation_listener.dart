@@ -25,39 +25,42 @@ class TVNavigationListener extends StatefulWidget {
 
   /// Constructor
   const TVNavigationListener({
-    Key? key,
+    super.key,
     required this.child,
     this.customKeyHandlers,
     this.handleSelectAction = true,
     this.handleBackNavigation = true,
-  }) : super(key: key);
+  });
 
   @override
   State<TVNavigationListener> createState() => _TVNavigationListenerState();
 }
 
 class _TVNavigationListenerState extends State<TVNavigationListener> {
-  /// Focus node to capture key events
-  final FocusNode _focusNode = FocusNode();
+  @override
+  void initState() {
+    super.initState();
+    ServicesBinding.instance.keyboard.addHandler(_handleKeyEvent);
+  }
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    ServicesBinding.instance.keyboard.removeHandler(_handleKeyEvent);
     super.dispose();
   }
 
   /// Handle key events
-  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+  bool _handleKeyEvent(KeyEvent event) {
     // Only process key down events to avoid duplicates
     if (event is! KeyDownEvent) {
-      return KeyEventResult.ignored;
+      return false;
     }
 
     // Check for custom key handlers first
     if (widget.customKeyHandlers != null &&
         widget.customKeyHandlers!.containsKey(event.logicalKey)) {
       widget.customKeyHandlers![event.logicalKey]!();
-      return KeyEventResult.handled;
+      return true;
     }
 
     // Process standard navigation keys
@@ -71,29 +74,30 @@ class _TVNavigationListenerState extends State<TVNavigationListener> {
         case FocusDirection.up:
         case FocusDirection.down:
           bloc.add(MoveFocus(direction: navigationType));
-          return KeyEventResult.handled;
+          return true;
 
         case FocusDirection.select:
           if (widget.handleSelectAction) {
             bloc.add(const SelectFocused());
-            return KeyEventResult.handled;
+            return true;
           }
           break;
 
         case FocusDirection.back:
           if (widget.handleBackNavigation) {
             bloc.add(const NavigateBack());
-            return KeyEventResult.handled;
+            return true;
           }
           break;
       }
     }
 
-    return KeyEventResult.ignored;
+    return false;
   }
 
   /// Map keyboard keys to navigation directions
   FocusDirection? _getNavigationDirection(LogicalKeyboardKey key) {
+    // Standard keyboard and remote D-pad keys
     if (key == LogicalKeyboardKey.arrowLeft) {
       return FocusDirection.left;
     } else if (key == LogicalKeyboardKey.arrowRight) {
@@ -117,11 +121,6 @@ class _TVNavigationListenerState extends State<TVNavigationListener> {
 
   @override
   Widget build(BuildContext context) {
-    return Focus(
-      focusNode: _focusNode,
-      autofocus: true,
-      onKeyEvent: _handleKeyEvent,
-      child: widget.child,
-    );
+    return widget.child;
   }
 }
