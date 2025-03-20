@@ -161,13 +161,13 @@ showDialog(
 We welcome contributions! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
 ### Issues and Support
-If you encounter any issues or have questions, please file an issue on our [GitHub repository](https://github.com/yourusername/simple_tv_navigation/issues).
+If you encounter any issues or have questions, please file an issue on our [GitHub repository](https://github.com/AkmaljonAbdirakhimov/simple_tv_navigation/issues).
 
 ### Response Time
 We aim to respond to issues and pull requests within 48 hours. For critical issues, we'll try to respond as quickly as possible.
 
 ### Documentation
-For more detailed documentation and examples, please visit our [documentation site](https://github.com/yourusername/simple_tv_navigation/wiki).
+For more detailed documentation and examples, please visit our [documentation site](https://github.com/AkmaljonAbdirakhimov/simple_tv_navigation/wiki).
 
 ### License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

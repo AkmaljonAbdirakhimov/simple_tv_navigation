@@ -1,7 +1,7 @@
 name: simple_tv_navigation
 description: "A highly optimized TV navigation system for Flutter applications."
 version: 0.0.1
-homepage:
+homepage: https://github.com/AkmaljonAbdirakhimov/simple_tv_navigation
 
 environment:
   sdk: ^3.6.1
