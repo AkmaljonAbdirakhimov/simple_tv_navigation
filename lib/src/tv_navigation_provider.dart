@@ -106,4 +106,16 @@ extension TVNavigationContextExtension on BuildContext {
   /// Get the ID of the currently selected element
   String? get selectedElementId =>
       read<TVNavigationBloc>().state.selectedElementId;
+
+  /// Check if an element with the specified ID exists in the navigation system
+  bool hasElement(String id) {
+    try {
+      final bloc = read<TVNavigationBloc>();
+      return bloc.state.elements.containsKey(id) &&
+          bloc.state.elements[id]!.isRegistered;
+    } catch (e) {
+      // Return false if TVNavigationBloc is not available
+      return false;
+    }
+  }
 }
