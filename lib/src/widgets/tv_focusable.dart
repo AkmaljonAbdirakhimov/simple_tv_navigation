@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter/foundation.dart';
 
 import '../bloc/tv_navigation_bloc.dart';
 import '../models/focus_element.dart';
@@ -250,6 +249,23 @@ class _TVFocusableState extends State<TVFocusable> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if TVNavigationBloc is available
+    // This also handles the case when TVNavigationProvider is disabled
+    bool isNavigationAvailable = false;
+    try {
+      context.read<TVNavigationBloc>();
+      isNavigationAvailable = true;
+    } catch (_) {
+      isNavigationAvailable = false;
+    }
+
+    if (!isNavigationAvailable) {
+      // If navigation is disabled, just return the child without any focus styling
+      return widget.builder != null
+          ? widget.builder!(context, false, false, widget.child)
+          : widget.child ?? const SizedBox();
+    }
+
     return MultiBlocListener(
       listeners: [
         // Listen for focus changes

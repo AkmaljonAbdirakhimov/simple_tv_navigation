@@ -26,6 +26,10 @@ A highly optimized and efficient TV navigation system for Flutter applications. 
 - **Memory Management**: Efficient storage of the navigation graph and cleanup of unused elements
 - **Debugging Tools**: Navigation path analysis and validation
 - **Input Handling**: Support for keyboard, remote controls, and gamepads
+- **Enable/Disable**: Easily toggle the entire navigation system on or off
+- **Flexible Styling**: Control focus decoration with options for default, custom, or no decoration
+- **Accessibility**: Built-in support for screen readers and accessibility tools
+- **Flexible Widget Creation**: Build focusable elements from scratch with the builder parameter
 
 ## Installation
 
@@ -33,7 +37,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  simple_tv_navigation: ^0.0.1
+  simple_tv_navigation: ^0.0.1+11
 ```
 
 ## Basic Usage
@@ -43,6 +47,7 @@ Wrap your application (or a section of it) with `TVNavigationProvider`:
 ```dart
 TVNavigationProvider(
   initialFocusId: 'firstItem',
+  enabled: true, // Can be toggled to disable navigation
   child: Scaffold(
     body: YourAppContent(),
   ),
@@ -99,6 +104,53 @@ TVFocusable(
 )
 ```
 
+### Complete Widget Customization
+
+Use the `builder` parameter for complete control over the widget rendering:
+
+```dart
+TVFocusable(
+  id: 'customItem',
+  // Child is optional when using builder
+  builder: (context, isFocused, isSelected, child) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isFocused ? Colors.blue.withOpacity(0.2) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: isFocused 
+            ? [BoxShadow(color: Colors.blue, blurRadius: 8)]
+            : null,
+      ),
+      child: Column(
+        children: [
+          if (isFocused) Icon(Icons.check),
+          Text('Custom Built Widget'),
+          if (isSelected) Text('Selected!'),
+        ],
+      ),
+    );
+  },
+)
+```
+
+### Enabling/Disabling Navigation
+
+You can easily toggle the entire navigation system on or off:
+
+```dart
+TVNavigationProvider(
+  enabled: shouldEnableNavigation, // Dynamic flag
+  child: YourApp(),
+)
+```
+
+This is useful for:
+- Developing apps that work on both TV and mobile platforms
+- Temporarily disabling navigation during animations or loading states
+- A/B testing navigation systems
+- Creating a "desktop mode" vs "TV mode" in your application
+
 ### Programmatic Navigation
 
 You can control the navigation programmatically using the extension methods:
@@ -154,6 +206,40 @@ showDialog(
 ```
 
 ### Analyzing Navigation Paths
+
+### Focus Decoration Options
+
+You can control how focus is visually indicated:
+
+```dart
+// No decoration (default)
+TVFocusable(
+  id: 'item1',
+  child: Text('No decoration'),
+  // showDefaultFocusDecoration defaults to false
+)
+
+// Default decoration (blue border)
+TVFocusable(
+  id: 'item2',
+  child: Text('Default decoration'),
+  showDefaultFocusDecoration: true,
+)
+
+// Custom decoration
+TVFocusable(
+  id: 'item3',
+  child: Text('Custom styling'),
+  focusBuilder: (context, isFocused, isSelected, child) {
+    return Container(
+      transform: isFocused 
+          ? Matrix4.identity()..scale(1.1)
+          : Matrix4.identity(),
+      child: child,
+    );
+  },
+)
+```
 
 ## Additional Information
 

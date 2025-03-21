@@ -1,3 +1,14 @@
+## 0.0.1+11
+
+- Added option to enable or disable the TVNavigationProvider with `enabled` parameter
+- Added new `builder` parameter to TVFocusable for complete widget customization
+- Made child parameter optional when a builder is provided
+- Added option to toggle default focus decoration with `showDefaultFocusDecoration`
+- Fixed selection handling to properly work with repeated selections
+- Improved error handling in TVFocusable when TVNavigationBloc isn't available
+- Added accessibility support with Semantics
+- Optimized performance with more efficient BlocListener implementation
+
 ## 0.0.1
 
 - Initial release

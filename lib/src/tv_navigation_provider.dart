@@ -29,19 +29,30 @@ class TVNavigationProvider extends StatelessWidget {
   /// Whether to handle back navigation automatically
   final bool handleBackNavigation;
 
+  /// Whether the TV navigation system is enabled
+  /// When disabled, all navigation events are ignored
+  /// and no focus styling is applied
+  final bool enabled;
+
   /// Constructor
   const TVNavigationProvider({
-    Key? key,
+    super.key,
     required this.child,
     this.initialFocusId,
     this.autoListen = true,
     this.customKeyHandlers,
     this.handleSelectAction = true,
     this.handleBackNavigation = true,
-  }) : super(key: key);
+    this.enabled = true,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // If navigation is disabled, just return the child without the bloc
+    if (!enabled) {
+      return child;
+    }
+
     return BlocProvider<TVNavigationBloc>(
       create: (context) => TVNavigationBloc(initialFocusId: initialFocusId),
       child: autoListen
