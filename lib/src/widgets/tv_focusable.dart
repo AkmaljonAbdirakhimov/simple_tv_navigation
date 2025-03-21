@@ -203,6 +203,12 @@ class _TVFocusableState extends State<TVFocusable> {
     if (widget.onSelect != null) {
       widget.onSelect!();
     }
+
+    // Clear the selection state in the bloc after handling it
+    // This allows the element to be selected again
+    if (_cachedBloc != null) {
+      _cachedBloc!.add(const ClearSelection());
+    }
   }
 
   /// Handle focus (when this element gets focus)
@@ -253,7 +259,7 @@ class _TVFocusableState extends State<TVFocusable> {
                 previous.elements[widget.id]?.isSelected ?? false;
             final currSelected =
                 current.elements[widget.id]?.isSelected ?? false;
-            // Only listen when selection changes from false to true
+            // Listen for when this element becomes selected
             return !prevSelected && currSelected;
           },
           listener: (context, state) {
