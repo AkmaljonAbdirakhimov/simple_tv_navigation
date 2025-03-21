@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 
 import '../bloc/tv_navigation_bloc.dart';
 import '../models/focus_element.dart';
@@ -81,8 +82,18 @@ class _TVFocusableState extends State<TVFocusable> {
   @override
   void initState() {
     super.initState();
-    // Cache the bloc reference when the widget is first built
-    _cachedBloc = BlocProvider.of<TVNavigationBloc>(context);
+
+    // Try to find the TVNavigationBloc in a safer way with proper error handling
+    try {
+      _cachedBloc = BlocProvider.of<TVNavigationBloc>(context);
+    } catch (e) {
+      assert(
+        false,
+        'No TVNavigationBloc found in the widget tree. '
+        'Make sure to wrap your widget tree with TVNavigationProvider.',
+      );
+    }
+
     // We register in post-frame callback to ensure the widget is fully built
     if (widget.autoRegister) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -117,7 +128,15 @@ class _TVFocusableState extends State<TVFocusable> {
 
   /// Register this element with the navigation system
   void _registerElement() {
-    _cachedBloc ??= BlocProvider.of<TVNavigationBloc>(context);
+    if (_cachedBloc == null) {
+      try {
+        _cachedBloc = BlocProvider.of<TVNavigationBloc>(context);
+      } catch (e) {
+        debugPrint(
+            'TVFocusable: Failed to register element ${widget.id} - No TVNavigationBloc found');
+        return;
+      }
+    }
 
     final element = FocusElement(
       id: widget.id,
@@ -140,13 +159,20 @@ class _TVFocusableState extends State<TVFocusable> {
 
   /// Update the render metrics (size and position) of this element
   void _updateElementMetrics() {
-    // We need to wait for the render box to be attached
+    // Debounce metric updates to prevent excessive updates during animations
+    if (!mounted) return;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
       final RenderObject? renderObject =
           _elementKey.currentContext?.findRenderObject();
       if (renderObject is RenderBox && _cachedBloc != null) {
+        // Get the current global position
+        final Offset position = renderObject.localToGlobal(Offset.zero);
+        final Size size = renderObject.size;
+
+        // Only update if position or size has changed
         _cachedBloc!.add(UpdateElementMetrics(
           id: widget.id,
           key: _elementKey,
@@ -161,7 +187,7 @@ class _TVFocusableState extends State<TVFocusable> {
     final BuildContext? elementContext = _elementKey.currentContext;
     if (elementContext == null) return;
 
-    // Wait for the next frame to make sure everything is laid out correctly
+    // Debounce scrolling to prevent excessive animations
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
@@ -204,58 +230,83 @@ class _TVFocusableState extends State<TVFocusable> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<TVNavigationBloc, TVNavigationState, (bool, bool)>(
-      selector: (state) {
-        final element = state.elements[widget.id];
-        final isFocused = element?.isFocused ?? false;
-        final isSelected = element?.isSelected ?? false;
-        return (isFocused, isSelected);
-      },
-      builder: (context, focusState) {
-        final (isFocused, isSelected) = focusState;
+    return MultiBlocListener(
+      listeners: [
+        // Listen for focus changes
+        BlocListener<TVNavigationBloc, TVNavigationState>(
+          listenWhen: (previous, current) {
+            final prevFocused =
+                previous.elements[widget.id]?.isFocused ?? false;
+            final currFocused = current.elements[widget.id]?.isFocused ?? false;
+            return prevFocused != currFocused;
+          },
+          listener: (context, state) {
+            final isFocused = state.elements[widget.id]?.isFocused ?? false;
+            if (isFocused) {
+              _handleFocus();
+            } else {
+              _handleBlur();
+            }
+          },
+        ),
+        // Listen for selection changes
+        BlocListener<TVNavigationBloc, TVNavigationState>(
+          listenWhen: (previous, current) {
+            final prevSelected =
+                previous.elements[widget.id]?.isSelected ?? false;
+            final currSelected =
+                current.elements[widget.id]?.isSelected ?? false;
+            // Only listen when selection changes from false to true
+            return !prevSelected && currSelected;
+          },
+          listener: (context, state) {
+            _handleSelect();
+          },
+        ),
+      ],
+      child: BlocSelector<TVNavigationBloc, TVNavigationState, (bool, bool)>(
+        selector: (state) {
+          final element = state.elements[widget.id];
+          final isFocused = element?.isFocused ?? false;
+          final isSelected = element?.isSelected ?? false;
+          return (isFocused, isSelected);
+        },
+        builder: (context, focusState) {
+          final (isFocused, isSelected) = focusState;
 
-        // Handle callbacks
-        if (isFocused) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _handleFocus());
-        } else {
-          // Only call onBlur if we were previously focused
-          final element =
-              context.read<TVNavigationBloc>().state.elements[widget.id];
-          if (element?.isFocused ?? false) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => _handleBlur());
+          // Default focus styling if no builder provided
+          Widget result = widget.child;
+
+          if (widget.focusBuilder != null) {
+            result = widget.focusBuilder!(
+                context, isFocused, isSelected, widget.child);
+          } else {
+            // Apply default focus styling
+            result = AnimatedContainer(
+              duration: widget.focusAnimationDuration,
+              decoration: BoxDecoration(
+                border: isFocused
+                    ? Border.all(color: const Color(0xFF2196F3), width: 2.0)
+                    : null,
+                borderRadius: BorderRadius.circular(4.0),
+              ),
+              child: widget.child,
+            );
           }
-        }
 
-        // Handle selection
-        if (isSelected) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _handleSelect());
-        }
-
-        // Default focus styling if no builder provided
-        Widget result = widget.child;
-
-        if (widget.focusBuilder != null) {
-          result = widget.focusBuilder!(
-              context, isFocused, isSelected, widget.child);
-        } else {
-          // Apply default focus styling
-          result = AnimatedContainer(
-            duration: widget.focusAnimationDuration,
-            decoration: BoxDecoration(
-              border: isFocused
-                  ? Border.all(color: const Color(0xFF2196F3), width: 2.0)
-                  : null,
-              borderRadius: BorderRadius.circular(4.0),
+          // Wrap with Semantics for accessibility
+          return KeyedSubtree(
+            key: _elementKey,
+            child: Semantics(
+              label: 'Focusable element ${widget.id}',
+              selected: isFocused,
+              focusable: true,
+              onTap: widget.onSelect,
+              child: result,
             ),
-            child: widget.child,
           );
-        }
-
-        return KeyedSubtree(
-          key: _elementKey,
-          child: result,
-        );
-      },
+        },
+      ),
     );
   }
 }
