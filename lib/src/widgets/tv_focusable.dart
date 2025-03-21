@@ -344,22 +344,14 @@ class _TVFocusableState extends State<TVFocusable> {
         builder: (context, focusState) {
           final (isFocused, isSelected) = focusState;
 
-          // If a general builder is provided, use it first
-          if (widget.builder != null) {
-            return KeyedSubtree(
-              key: _elementKey,
-              child: Semantics(
-                label: widget.id,
-                selected: isFocused,
-                focusable: true,
-                child: widget.builder!(
-                    context, isFocused, isSelected, widget.child),
-              ),
-            );
-          }
-
           // Default focus styling if no builder provided
           Widget result = widget.child ?? const SizedBox();
+
+          // If a general builder is provided, use it first
+          if (widget.builder != null) {
+            result =
+                widget.builder!(context, isFocused, isSelected, widget.child);
+          }
 
           if (widget.focusBuilder != null) {
             result = widget.focusBuilder!(
