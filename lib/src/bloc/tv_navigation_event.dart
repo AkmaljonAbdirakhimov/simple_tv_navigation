@@ -126,3 +126,15 @@ class UpdateElementMetrics extends TVNavigationEvent {
   @override
   List<Object?> get props => [id, key, renderBox];
 }
+
+/// Restore focus to the last focused element
+class RestoreFocus extends TVNavigationEvent {
+  /// ID to restore focus to, if null it will attempt to restore the last known focus
+  final String? id;
+
+  /// Constructor
+  const RestoreFocus({this.id});
+
+  @override
+  List<Object?> get props => [id];
+}

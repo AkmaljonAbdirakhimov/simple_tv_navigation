@@ -1,3 +1,9 @@
+## 0.0.1+15
+
+- Improved focus handling during hot reloads to maintain focus state
+- Added `restoreFocus` method to manually restore focus to the last focused element
+- Enhanced TV navigation system to better track and restore focus state
+
 ## 0.0.1+14
 
 - Added `hasElement(id)` method to check if a specific element exists in the navigation system

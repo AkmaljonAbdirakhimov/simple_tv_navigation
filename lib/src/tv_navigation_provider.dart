@@ -118,4 +118,14 @@ extension TVNavigationContextExtension on BuildContext {
       return false;
     }
   }
+
+  /// Attempt to restore the focus to the most recent element
+  /// Useful after hot reloads or when navigating between screens
+  void restoreFocus({String? id}) {
+    try {
+      read<TVNavigationBloc>().add(RestoreFocus(id: id));
+    } catch (e) {
+      // Silently fail if TVNavigationBloc is not available
+    }
+  }
 }

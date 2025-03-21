@@ -143,6 +143,20 @@ class _TVFocusableState extends State<TVFocusable> {
   void didUpdateWidget(TVFocusable oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    // When hot reloading, we need to check if this was the focused element
+    // and preserve its focused state
+    if (_cachedBloc != null) {
+      final wasFocused = _cachedBloc!.state.focusedElementId == oldWidget.id;
+
+      // If the ID changed but this was the focused element, update focus to the new ID
+      if (oldWidget.id != widget.id && wasFocused) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // Set focus to the new ID
+          _cachedBloc!.add(SetFocus(id: widget.id));
+        });
+      }
+    }
+
     // If the ID or navigation properties changed, we need to update the element
     if (oldWidget.id != widget.id ||
         oldWidget.leftId != widget.leftId ||
@@ -159,6 +173,16 @@ class _TVFocusableState extends State<TVFocusable> {
       _cachedBloc!.add(UnregisterElement(id: widget.id));
     }
     super.dispose();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+
+    // Hot reload has occurred, attempt to restore focus
+    if (_cachedBloc != null) {
+      _cachedBloc!.add(const RestoreFocus());
+    }
   }
 
   /// Register this element with the navigation system
@@ -187,6 +211,9 @@ class _TVFocusableState extends State<TVFocusable> {
       }
     }
 
+    // Check if this element should maintain focus during hot reload
+    final shouldRetainFocus = _cachedBloc!.state.focusedElementId == widget.id;
+
     final element = FocusElement(
       id: widget.id,
       leftId: widget.leftId,
@@ -197,7 +224,8 @@ class _TVFocusableState extends State<TVFocusable> {
 
     _cachedBloc!.add(RegisterElement(
       element: element,
-      focusImmediately: widget.autoFocus,
+      // Prioritize retaining focus if this was the focused element
+      focusImmediately: shouldRetainFocus || widget.autoFocus,
     ));
 
     _isRegistered = true;

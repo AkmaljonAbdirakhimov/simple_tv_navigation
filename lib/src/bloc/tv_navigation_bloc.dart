@@ -30,6 +30,7 @@ class TVNavigationBloc extends Bloc<TVNavigationEvent, TVNavigationState> {
     on<NavigateBack>(_onNavigateBack);
     on<ResetNavigation>(_onResetNavigation);
     on<UpdateElementMetrics>(_onUpdateElementMetrics);
+    on<RestoreFocus>(_onRestoreFocus);
   }
 
   /// Register a new focusable element
@@ -38,10 +39,11 @@ class TVNavigationBloc extends Bloc<TVNavigationEvent, TVNavigationState> {
     Emitter<TVNavigationState> emit,
   ) {
     final existingElement = state.elements[event.element.id];
+    final wasFocused = existingElement?.isFocused ?? false;
 
     // If the element already exists, update it, preserving its focus state
     final updatedElement = event.element.copyWith(
-      isFocused: existingElement?.isFocused ?? false,
+      isFocused: wasFocused,
       isSelected: existingElement?.isSelected ?? false,
       lastFocusedTime: existingElement?.lastFocusedTime,
       isRegistered: true,
@@ -50,13 +52,18 @@ class TVNavigationBloc extends Bloc<TVNavigationEvent, TVNavigationState> {
     final updatedElements = Map<String, FocusElement>.from(state.elements);
     updatedElements[event.element.id] = updatedElement;
 
-    emit(state.copyWith(elements: updatedElements));
+    // Maintain the focused element ID if this element was focused
+    final focusedElementId =
+        wasFocused ? event.element.id : state.focusedElementId;
+
+    emit(state.copyWith(
+      elements: updatedElements,
+      focusedElementId: focusedElementId,
+    ));
 
     // If this is the first registered element and no focused element exists yet,
     // focus it automatically if specified
-    if (state.focusedElementId == null &&
-        state.elements.length == 1 &&
-        event.focusImmediately) {
+    if (state.focusedElementId == null && event.focusImmediately) {
       add(SetFocus(id: event.element.id));
     }
   }
@@ -479,5 +486,58 @@ class TVNavigationBloc extends Bloc<TVNavigationEvent, TVNavigationState> {
     }
 
     return updatedHistory;
+  }
+
+  /// Restore focus to a specific element or the last focused element
+  FutureOr<void> _onRestoreFocus(
+    RestoreFocus event,
+    Emitter<TVNavigationState> emit,
+  ) {
+    // If a specific ID is provided, try to focus that element
+    if (event.id != null &&
+        state.elements.containsKey(event.id) &&
+        state.elements[event.id]!.isRegistered) {
+      add(SetFocus(id: event.id!));
+      return null;
+    }
+
+    // If no ID is provided or it's invalid, try to restore the last known focus
+
+    // First check if the currently focused element is still valid
+    if (state.focusedElementId != null &&
+        state.elements.containsKey(state.focusedElementId) &&
+        state.elements[state.focusedElementId!]!.isRegistered) {
+      // Current focus is still valid, no need to change
+      return null;
+    }
+
+    // Try to find a valid element from the focus history
+    if (state.focusHistory.isNotEmpty) {
+      for (final historyEvent in state.focusHistory.reversed) {
+        // Try target first, then source
+        for (final elementId in [
+          historyEvent.targetId,
+          historyEvent.sourceId
+        ]) {
+          if (elementId != null &&
+              state.elements.containsKey(elementId) &&
+              state.elements[elementId]!.isRegistered) {
+            add(SetFocus(id: elementId));
+            return null;
+          }
+        }
+      }
+    }
+
+    // If all else fails, find any registered element
+    for (final element in state.elements.values) {
+      if (element.isRegistered) {
+        add(SetFocus(id: element.id));
+        return null;
+      }
+    }
+
+    // If we reach here, nothing to focus
+    return null;
   }
 }
