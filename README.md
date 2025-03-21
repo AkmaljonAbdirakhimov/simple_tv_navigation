@@ -37,7 +37,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  simple_tv_navigation: ^0.0.1+12
+  simple_tv_navigation: ^0.0.1+13
 ```
 
 ## Basic Usage

@@ -394,7 +394,6 @@ class _TVFocusableState extends State<TVFocusable> {
     );
   }
 
-  @override
   void updateState() {
     if (_isRegistered && _cachedBloc != null) {
       _updateElementMetrics();
