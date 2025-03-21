@@ -168,11 +168,8 @@ class _TVFocusableState extends State<TVFocusable> {
       final RenderObject? renderObject =
           _elementKey.currentContext?.findRenderObject();
       if (renderObject is RenderBox && _cachedBloc != null) {
-        // Get the current global position
-        final Offset position = renderObject.localToGlobal(Offset.zero);
-        final Size size = renderObject.size;
-
-        // Only update if position or size has changed
+        // We don't need to calculate position and size here,
+        // as UpdateElementMetrics will do that using the provided renderBox
         _cachedBloc!.add(UpdateElementMetrics(
           id: widget.id,
           key: _elementKey,
@@ -298,10 +295,9 @@ class _TVFocusableState extends State<TVFocusable> {
           return KeyedSubtree(
             key: _elementKey,
             child: Semantics(
-              label: 'Focusable element ${widget.id}',
+              label: widget.id,
               selected: isFocused,
               focusable: true,
-              onTap: widget.onSelect,
               child: result,
             ),
           );
