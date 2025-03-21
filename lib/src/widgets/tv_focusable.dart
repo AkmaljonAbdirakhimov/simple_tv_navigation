@@ -14,7 +14,8 @@ class TVFocusable extends StatefulWidget {
   final String id;
 
   /// The widget to be displayed
-  final Widget child;
+  /// Optional if builder is provided
+  final Widget? child;
 
   /// ID of the element to focus when navigating left
   final String? leftId;
@@ -39,14 +40,14 @@ class TVFocusable extends StatefulWidget {
 
   /// Builder function for customizing the appearance based on focus state
   final Widget Function(
-          BuildContext context, bool isFocused, bool isSelected, Widget child)?
+          BuildContext context, bool isFocused, bool isSelected, Widget? child)?
       focusBuilder;
 
   /// General builder function that provides access to focus state
   /// This will be called instead of child if provided, giving more
   /// control over the entire widget rendering
   final Widget Function(
-          BuildContext context, bool isFocused, bool isSelected, Widget child)?
+          BuildContext context, bool isFocused, bool isSelected, Widget? child)?
       builder;
 
   /// Whether this element should automatically register itself when built
@@ -67,7 +68,7 @@ class TVFocusable extends StatefulWidget {
   const TVFocusable({
     super.key,
     required this.id,
-    required this.child,
+    this.child,
     this.leftId,
     this.rightId,
     this.upId,
@@ -81,7 +82,10 @@ class TVFocusable extends StatefulWidget {
     this.autoFocus = false,
     this.showDefaultFocusDecoration = false,
     this.focusAnimationDuration = const Duration(milliseconds: 200),
-  });
+  }) : assert(
+          child != null || builder != null,
+          'Either child or builder must be provided',
+        );
 
   @override
   State<TVFocusable> createState() => _TVFocusableState();
@@ -305,7 +309,7 @@ class _TVFocusableState extends State<TVFocusable> {
           }
 
           // Default focus styling if no builder provided
-          Widget result = widget.child;
+          Widget result = widget.child ?? const SizedBox();
 
           if (widget.focusBuilder != null) {
             result = widget.focusBuilder!(
@@ -320,7 +324,7 @@ class _TVFocusableState extends State<TVFocusable> {
                     : null,
                 borderRadius: BorderRadius.circular(4.0),
               ),
-              child: widget.child,
+              child: result,
             );
           }
           // else just use the child as is (no decoration)

@@ -8,7 +8,7 @@ class DebugFocusable extends StatelessWidget {
   final String? rightId;
   final String? upId;
   final String? downId;
-  final Widget Function(BuildContext, bool, bool, Widget) focusBuilder;
+  final Widget Function(BuildContext, bool, bool, Widget?) focusBuilder;
   final Widget child;
   final VoidCallback? onSelect;
   final bool showDebugInfo;

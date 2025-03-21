@@ -93,7 +93,7 @@ class ExampleLauncherScreen extends StatelessWidget {
   }
 
   Widget _focusBuilder(
-      BuildContext context, bool isFocused, bool isSelected, Widget child) {
+      BuildContext context, bool isFocused, bool isSelected, Widget? child) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       transformAlignment: Alignment.center,
