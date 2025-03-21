@@ -276,7 +276,7 @@ class NavigationAnalyzer {
               ? 'color=green, style=filled'
               : 'color=lightblue, style=filled';
 
-      buffer.writeln('  "${element.id}" [${nodeStyle}];');
+      buffer.writeln('  "${element.id}" [$nodeStyle];');
     }
 
     // Define edges

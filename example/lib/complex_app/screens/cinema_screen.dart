@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:simple_tv_navigation/simple_tv_navigation.dart';
 
 import '../widgets/movie_card.dart';
 import '../widgets/debug_focusable.dart';

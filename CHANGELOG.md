@@ -1,4 +1,4 @@
-## 0.0.1+11
+## 0.0.1+12
 
 - Added option to enable or disable the TVNavigationProvider with `enabled` parameter
 - Added new `builder` parameter to TVFocusable for complete widget customization
