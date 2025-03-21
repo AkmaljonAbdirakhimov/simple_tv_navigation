@@ -56,6 +56,10 @@ class TVFocusable extends StatefulWidget {
   /// (if it's the first element)
   final bool autoFocus;
 
+  /// Whether to show the default focus decoration
+  /// If false, no decoration will be applied unless focusBuilder is provided
+  final bool showDefaultFocusDecoration;
+
   /// Animation duration for focus transitions
   final Duration focusAnimationDuration;
 
@@ -75,6 +79,7 @@ class TVFocusable extends StatefulWidget {
     this.builder,
     this.autoRegister = true,
     this.autoFocus = false,
+    this.showDefaultFocusDecoration = false,
     this.focusAnimationDuration = const Duration(milliseconds: 200),
   });
 
@@ -305,8 +310,8 @@ class _TVFocusableState extends State<TVFocusable> {
           if (widget.focusBuilder != null) {
             result = widget.focusBuilder!(
                 context, isFocused, isSelected, widget.child);
-          } else {
-            // Apply default focus styling
+          } else if (widget.showDefaultFocusDecoration) {
+            // Apply default focus styling only if showDefaultFocusDecoration is true
             result = AnimatedContainer(
               duration: widget.focusAnimationDuration,
               decoration: BoxDecoration(
@@ -318,6 +323,7 @@ class _TVFocusableState extends State<TVFocusable> {
               child: widget.child,
             );
           }
+          // else just use the child as is (no decoration)
 
           // Wrap with Semantics for accessibility
           return KeyedSubtree(
