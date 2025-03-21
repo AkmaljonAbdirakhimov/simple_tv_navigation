@@ -1,4 +1,4 @@
-## 0.0.1+13
+## 0.0.1+14
 
 - Added `hasElement(id)` method to check if a specific element exists in the navigation system
 - Added option to enable or disable the TVNavigationProvider with `enabled` parameter
