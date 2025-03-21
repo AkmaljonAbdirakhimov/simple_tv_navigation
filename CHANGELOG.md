@@ -8,6 +8,7 @@
 - Improved error handling in TVFocusable when TVNavigationBloc isn't available
 - Added accessibility support with Semantics
 - Optimized performance with more efficient BlocListener implementation
+- Fixed handling of disabled TVNavigationProvider to prevent assertion errors
 
 ## 0.0.1
 
