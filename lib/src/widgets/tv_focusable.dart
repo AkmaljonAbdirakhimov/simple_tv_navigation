@@ -100,18 +100,39 @@ class _TVFocusableState extends State<TVFocusable> {
     super.initState();
 
     // Try to find the TVNavigationBloc in a safer way with proper error handling
+    bool isNavigationAvailable = false;
     try {
       _cachedBloc = BlocProvider.of<TVNavigationBloc>(context);
+      isNavigationAvailable = true;
     } catch (e) {
-      assert(
-        false,
-        'No TVNavigationBloc found in the widget tree. '
-        'Make sure to wrap your widget tree with TVNavigationProvider.',
-      );
+      // When TVNavigationProvider is disabled, this is expected and shouldn't cause an assertion
+      isNavigationAvailable = false;
+    }
+
+    // Only assert if we're in a context where navigation should be available
+    // but the bloc is missing
+    if (!isNavigationAvailable) {
+      // Check if we're inside a BlocProvider that should provide a TVNavigationBloc
+      bool hasNavigationProvider = false;
+      try {
+        hasNavigationProvider = context.findAncestorWidgetOfExactType<
+                BlocProvider<TVNavigationBloc>>() !=
+            null;
+      } catch (_) {
+        // Ignore errors when checking for ancestor widgets
+      }
+
+      if (hasNavigationProvider) {
+        assert(
+          false,
+          'No TVNavigationBloc found in the widget tree. '
+          'Make sure to wrap your widget tree with TVNavigationProvider.',
+        );
+      }
     }
 
     // We register in post-frame callback to ensure the widget is fully built
-    if (widget.autoRegister) {
+    if (widget.autoRegister && isNavigationAvailable) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _registerElement();
       });
@@ -134,10 +155,8 @@ class _TVFocusableState extends State<TVFocusable> {
 
   @override
   void dispose() {
-    // Unregister this element when the widget is disposed
     if (_isRegistered && _cachedBloc != null) {
       _cachedBloc!.add(UnregisterElement(id: widget.id));
-      _isRegistered = false;
     }
     super.dispose();
   }
@@ -145,11 +164,25 @@ class _TVFocusableState extends State<TVFocusable> {
   /// Register this element with the navigation system
   void _registerElement() {
     if (_cachedBloc == null) {
+      // Try to find the TVNavigationBloc, but don't show errors if navigation is disabled
       try {
         _cachedBloc = BlocProvider.of<TVNavigationBloc>(context);
       } catch (e) {
-        debugPrint(
-            'TVFocusable: Failed to register element ${widget.id} - No TVNavigationBloc found');
+        // Only log debug messages in debug mode, and only if we're supposed to have a bloc
+        // (i.e., we're inside a TVNavigationProvider that isn't disabled)
+        bool hasNavigationProvider = false;
+        try {
+          hasNavigationProvider = context.findAncestorWidgetOfExactType<
+                  BlocProvider<TVNavigationBloc>>() !=
+              null;
+        } catch (_) {
+          // Ignore errors when checking for ancestor widgets
+        }
+
+        if (hasNavigationProvider) {
+          debugPrint(
+              'TVFocusable: Failed to register element ${widget.id} - No TVNavigationBloc found');
+        }
         return;
       }
     }
@@ -173,26 +206,27 @@ class _TVFocusableState extends State<TVFocusable> {
     _updateElementMetrics();
   }
 
-  /// Update the render metrics (size and position) of this element
+  /// Update the metrics of this element in the navigation system
   void _updateElementMetrics() {
-    // Debounce metric updates to prevent excessive updates during animations
-    if (!mounted) return;
+    if (!mounted || _cachedBloc == null) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+    // Get the RenderBox if it's available
+    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
 
-      final RenderObject? renderObject =
-          _elementKey.currentContext?.findRenderObject();
-      if (renderObject is RenderBox && _cachedBloc != null) {
-        // We don't need to calculate position and size here,
-        // as UpdateElementMetrics will do that using the provided renderBox
-        _cachedBloc!.add(UpdateElementMetrics(
-          id: widget.id,
-          key: _elementKey,
-          renderBox: renderObject,
-        ));
-      }
-    });
+    if (renderBox == null || !renderBox.hasSize) {
+      // If the render box is not available or has no size yet, schedule an update for later
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _updateElementMetrics();
+      });
+      return;
+    }
+
+    // Update the metrics in the navigation system
+    _cachedBloc!.add(UpdateElementMetrics(
+      id: widget.id,
+      key: _elementKey,
+      renderBox: renderBox,
+    ));
   }
 
   /// Ensures this widget is visible when it's inside a scrollable container
@@ -358,5 +392,12 @@ class _TVFocusableState extends State<TVFocusable> {
         },
       ),
     );
+  }
+
+  @override
+  void updateState() {
+    if (_isRegistered && _cachedBloc != null) {
+      _updateElementMetrics();
+    }
   }
 }
