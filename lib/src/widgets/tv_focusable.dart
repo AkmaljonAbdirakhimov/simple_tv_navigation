@@ -42,6 +42,13 @@ class TVFocusable extends StatefulWidget {
           BuildContext context, bool isFocused, bool isSelected, Widget child)?
       focusBuilder;
 
+  /// General builder function that provides access to focus state
+  /// This will be called instead of child if provided, giving more
+  /// control over the entire widget rendering
+  final Widget Function(
+          BuildContext context, bool isFocused, bool isSelected, Widget child)?
+      builder;
+
   /// Whether this element should automatically register itself when built
   final bool autoRegister;
 
@@ -65,6 +72,7 @@ class TVFocusable extends StatefulWidget {
     this.onFocus,
     this.onBlur,
     this.focusBuilder,
+    this.builder,
     this.autoRegister = true,
     this.autoFocus = false,
     this.focusAnimationDuration = const Duration(milliseconds: 200),
@@ -276,6 +284,20 @@ class _TVFocusableState extends State<TVFocusable> {
         },
         builder: (context, focusState) {
           final (isFocused, isSelected) = focusState;
+
+          // If a general builder is provided, use it first
+          if (widget.builder != null) {
+            return KeyedSubtree(
+              key: _elementKey,
+              child: Semantics(
+                label: widget.id,
+                selected: isFocused,
+                focusable: true,
+                child: widget.builder!(
+                    context, isFocused, isSelected, widget.child),
+              ),
+            );
+          }
 
           // Default focus styling if no builder provided
           Widget result = widget.child;
