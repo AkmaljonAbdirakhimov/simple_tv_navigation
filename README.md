@@ -22,7 +22,6 @@ A highly optimized and efficient TV navigation system for Flutter applications. 
 - **Smart Fallback**: Automatically finds the best element to focus if explicit IDs are missing
 - **Focus History**: Tracks navigation history for handling back navigation
 - **Custom Focus Appearance**: Highly customizable focus indicators and transitions
-- **Spatial Awareness**: Intelligent navigation based on element positions when explicit connections are missing
 - **Memory Management**: Efficient storage of the navigation graph and cleanup of unused elements
 - **Debugging Tools**: Navigation path analysis and validation
 - **Input Handling**: Support for keyboard, remote controls, and gamepads

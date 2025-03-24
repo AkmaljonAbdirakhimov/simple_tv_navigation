@@ -1,20 +1,14 @@
-/// Represents the possible navigation directions
+/// Represents the direction of focus movement in TV navigation.
 enum FocusDirection {
-  /// Left direction (typically navigated with left arrow key)
+  /// Move focus to the left
   left,
 
-  /// Right direction (typically navigated with right arrow key)
+  /// Move focus to the right
   right,
 
-  /// Up direction (typically navigated with up arrow key)
+  /// Move focus up
   up,
 
-  /// Down direction (typically navigated with down arrow key)
+  /// Move focus down
   down,
-
-  /// Select the current item (typically triggered with Enter or OK button)
-  select,
-
-  /// Go back to the previous screen or state (typically triggered with Back button)
-  back,
 }

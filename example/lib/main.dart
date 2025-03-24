@@ -1,204 +1,245 @@
 import 'package:flutter/material.dart';
 import 'package:simple_tv_navigation/simple_tv_navigation.dart';
 
-import 'basic_example.dart';
-import 'advanced_example.dart';
-import 'complex_app/complex_app_example.dart' as complex;
+// Import screens
+import 'screens/home_screen.dart';
+import 'screens/cinema_screen.dart';
+import 'screens/tv_screen.dart';
+import 'screens/profile_screen.dart';
 
-// This file serves as the main entry point for the example app
-// It simply redirects to the example launcher
 void main() {
-  runApp(const ExampleLauncherApp());
+  runApp(const MyApp());
 }
 
-class ExampleLauncherApp extends StatelessWidget {
-  const ExampleLauncherApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TV Navigation Examples',
+      title: 'TV Navigation Demo',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0F1216),
+        cardColor: const Color(0xFF1A1D22),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF2196F3),
+          secondary: Color(0xFF64B5F6),
+          background: Color(0xFF0F1216),
+          surface: Color(0xFF1A1D22),
+        ),
       ),
-      home: const ExampleLauncherScreen(),
+      home: const MainScreen(),
     );
   }
 }
 
-class ExampleLauncherScreen extends StatelessWidget {
-  const ExampleLauncherScreen({super.key});
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  void _onScreenChanged(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return TVNavigationProvider(
-      initialFocusId: 'basic',
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('TV Navigation Examples'),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      initialFocusId: 'sidebar_home',
+      child: Builder(builder: (context) {
+        return Scaffold(
+          body: Row(
             children: [
-              const Text(
-                'Select an example:',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              // Sidebar
+              SideBar(
+                selectedIndex: _selectedIndex,
+                onScreenChanged: _onScreenChanged,
               ),
-              const SizedBox(height: 40),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TVFocusable(
-                    autoFocus: true,
-                    id: 'basic',
-                    rightId: 'advanced',
-                    focusBuilder: _focusBuilder,
-                    onSelect: () => _openExample(context, 'basic'),
-                    child: _ExampleButton(
-                      title: 'Basic Example',
-                      description: 'Simple navigation with content grid',
-                      color: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  TVFocusable(
-                    id: 'advanced',
-                    leftId: 'basic',
-                    rightId: 'complex',
-                    focusBuilder: _focusBuilder,
-                    onSelect: () => _openExample(context, 'advanced'),
-                    child: _ExampleButton(
-                      title: 'Advanced Example',
-                      description: 'With navigation visualization',
-                      color: Colors.deepPurple,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  TVFocusable(
-                    id: 'complex',
-                    leftId: 'advanced',
-                    focusBuilder: _focusBuilder,
-                    onSelect: () => _openExample(context, 'complex'),
-                    child: _ExampleButton(
-                      title: 'Complex TV App',
-                      description: 'Complete TV app with multiple screens',
-                      color: Colors.teal,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 60),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Navigate using arrow keys and Enter/Return',
-                  style: TextStyle(fontStyle: FontStyle.italic),
-                ),
+              // Main content
+              Expanded(
+                child: _buildScreen(_selectedIndex),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
-  Widget _focusBuilder(
-      BuildContext context, bool isFocused, bool isSelected, Widget? child) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      transformAlignment: Alignment.center,
-      transform:
-          isFocused ? (Matrix4.identity()..scale(1.05)) : Matrix4.identity(),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: isFocused
-            ? [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.6),
-                  blurRadius: 16,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
-      ),
-      child: child,
-    );
-  }
-
-  void _openExample(BuildContext context, String type) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) {
-          switch (type) {
-            case 'basic':
-              return const BasicExampleApp();
-            case 'advanced':
-              return const AdvancedExampleApp();
-            case 'complex':
-              return const complex.ComplexAppExample();
-            default:
-              return const Scaffold(
-                body: Center(child: Text('Unknown example type')),
-              );
-          }
-        },
-      ),
-    );
+  Widget _buildScreen(int index) {
+    switch (index) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const CinemaScreen();
+      case 2:
+        return const TVScreen();
+      case 3:
+        return const ProfileScreen();
+      default:
+        return const Center(child: Text('Unknown Screen'));
+    }
   }
 }
 
-class _ExampleButton extends StatelessWidget {
-  final String title;
-  final String description;
-  final Color color;
+class SideBar extends StatelessWidget {
+  final int selectedIndex;
+  final Function(int) onScreenChanged;
 
-  const _ExampleButton({
-    required this.title,
-    required this.description,
-    required this.color,
+  const SideBar({
+    super.key,
+    required this.selectedIndex,
+    required this.onScreenChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 200,
-      height: 150,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
+      color: const Color(0xFF1A1D22),
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'TV Navigation',
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
               ),
-              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
-            Text(
-              description,
+          ),
+          const SizedBox(height: 32),
+          _buildSidebarItem(
+            context: context,
+            index: 0,
+            icon: Icons.home,
+            title: 'Home',
+            id: 'sidebar_home',
+            downId: 'sidebar_cinema',
+            rightId: 'home_banner_watch',
+          ),
+          _buildSidebarItem(
+            context: context,
+            index: 1,
+            icon: Icons.movie,
+            title: 'Cinema',
+            id: 'sidebar_cinema',
+            upId: 'sidebar_home',
+            downId: 'sidebar_tv',
+            rightId: 'cinema_tab_0',
+          ),
+          _buildSidebarItem(
+            context: context,
+            index: 2,
+            icon: Icons.tv,
+            title: 'Online TV',
+            id: 'sidebar_tv',
+            upId: 'sidebar_cinema',
+            downId: 'sidebar_profile',
+            rightId: 'channel_0',
+          ),
+          _buildSidebarItem(
+            context: context,
+            index: 3,
+            icon: Icons.person,
+            title: 'Profile',
+            id: 'sidebar_profile',
+            upId: 'sidebar_tv',
+            rightId: 'profile_avatar',
+          ),
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Version ${DateTime.now().year}.${DateTime.now().month}',
               style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
+                color: Colors.grey,
+                fontSize: 12,
               ),
-              textAlign: TextAlign.center,
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarItem({
+    required BuildContext context,
+    required int index,
+    required IconData icon,
+    required String title,
+    required String id,
+    String? upId,
+    String? downId,
+    String? leftId,
+    String? rightId,
+  }) {
+    final isSelected = selectedIndex == index;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: TVFocusable(
+        id: id,
+        upId: upId,
+        downId: downId,
+        leftId: leftId,
+        rightId: rightId,
+        onSelect: () {
+          onScreenChanged(index);
+        },
+        focusBuilder: (context, isFocused, isSelected, child) {
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              color:
+                  isFocused ? Colors.blue.withOpacity(0.2) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: child,
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color:
+                isSelected ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+            border:
+                isSelected ? Border.all(color: Colors.blue, width: 1) : null,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? Colors.blue : Colors.white,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                title,
+                style: TextStyle(
+                  color: isSelected ? Colors.blue : Colors.white,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
