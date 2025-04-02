@@ -34,20 +34,28 @@ class TvNavigationBloc extends Bloc<TvNavigationEvent, TvNavigationState> {
       newElements[element.id] = element;
 
       TvFocusElement? newCurrentlyFocusedElement;
+      bool shouldCallOnFocus = false;
+
       if (pendingFocusId != null && element.id == pendingFocusId) {
         newCurrentlyFocusedElement = element;
         pendingFocusId = null;
+        shouldCallOnFocus = true;
+      } else if (element.autofocus) {
+        newCurrentlyFocusedElement = element;
+        shouldCallOnFocus = true;
       } else {
-        newCurrentlyFocusedElement =
-            element.autofocus || state.currentlyFocusedElement == null
-                ? element
-                : state.currentlyFocusedElement;
+        newCurrentlyFocusedElement = state.currentlyFocusedElement;
       }
 
       emit(state.copyWith(
         focusElements: newElements,
         currentlyFocusedElement: newCurrentlyFocusedElement,
       ));
+
+      // Call onFocus after state update if this element gained focus
+      if (shouldCallOnFocus && newCurrentlyFocusedElement?.id == element.id) {
+        element.onFocus?.call();
+      }
     }
   }
 
@@ -98,9 +106,9 @@ class TvNavigationBloc extends Bloc<TvNavigationEvent, TvNavigationState> {
 
     if (state.focusElements.containsKey(event.id) &&
         state.currentlyFocusedElement?.id != event.id) {
-      emit(
-        state.copyWith(currentlyFocusedElement: state.focusElements[event.id]),
-      );
+      emit(state.copyWith(
+          currentlyFocusedElement: state.focusElements[event.id]));
+      state.focusElements[event.id]?.onFocus?.call();
     } else {
       pendingFocusId = event.id;
     }
