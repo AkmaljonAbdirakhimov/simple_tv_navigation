@@ -14,7 +14,6 @@ dependencies:
     sdk: flutter
   simple_tv_navigation:
     path: ../
-  provider: ^6.1.1  
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
