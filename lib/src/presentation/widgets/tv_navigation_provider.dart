@@ -1,8 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:simple_tv_navigation/src/framework/platform.dart';
+import 'package:simple_tv_navigation/src/framework/remote_controller.dart';
 
 import '../../../simple_tv_navigation.dart';
+
+/// Static class to handle key events from RemoteController
+class TvNavigationKeyHandler {
+  static _TvNavigationBlocBuilderState? _activeHandler;
+
+  /// Register the active navigation handler
+  static void registerHandler(_TvNavigationBlocBuilderState handler) {
+    _activeHandler = handler;
+  }
+
+  /// Unregister the active navigation handler
+  static void unregisterHandler(_TvNavigationBlocBuilderState handler) {
+    if (_activeHandler == handler) {
+      _activeHandler = null;
+    }
+  }
+
+  /// Handle key events and delegate to the active handler
+  static bool handleKeyEvent(KeyEvent event) {
+    if (_activeHandler != null) {
+      return _activeHandler!._handleKeyEvent(event);
+    }
+    return false;
+  }
+}
 
 class TvNavigationProvider extends StatelessWidget {
   final Widget child;
@@ -45,12 +72,18 @@ class _TvNavigationBlocBuilder extends StatefulWidget {
 
 class _TvNavigationBlocBuilderState extends State<_TvNavigationBlocBuilder> {
   late final TvNavigationBloc _navigationBloc;
+  final remoteController = RemoteController();
 
   @override
   void initState() {
     super.initState();
     _navigationBloc = context.tvBloc;
     ServicesBinding.instance.keyboard.addHandler(_handleKeyEvent);
+    TvNavigationKeyHandler.registerHandler(this);
+
+    if (MyPlatform.isTVOS) {
+      remoteController.init();
+    }
   }
 
   // Handle key events
@@ -104,6 +137,7 @@ class _TvNavigationBlocBuilderState extends State<_TvNavigationBlocBuilder> {
   @override
   void dispose() {
     ServicesBinding.instance.keyboard.removeHandler(_handleKeyEvent);
+    TvNavigationKeyHandler.unregisterHandler(this);
     super.dispose();
   }
 
