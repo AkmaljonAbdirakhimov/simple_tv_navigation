@@ -1,6 +1,6 @@
 name: simple_tv_navigation
 description: "A highly optimized TV navigation system for Flutter applications, providing efficient ID-based focus management for TVs, set-top boxes, and game consoles."
-version: 0.0.1+33
+version: 0.0.1+34
 homepage: https://github.com/AkmaljonAbdirakhimov/simple_tv_navigation
 repository: https://github.com/AkmaljonAbdirakhimov/simple_tv_navigation
 issue_tracker: https://github.com/AkmaljonAbdirakhimov/simple_tv_navigation/issues
