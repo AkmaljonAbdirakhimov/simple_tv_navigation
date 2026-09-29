@@ -12,6 +12,7 @@ A highly optimized TV navigation system for Flutter applications, providing effi
 - **Focus visualization**: Customizable focus highlighting
 - **Scroll to focused element**: Automatically scrolls to bring focused elements into view
 - **Focus events**: Callbacks for focus, blur, selection, and navigation events
+- **Hold to repeat**: Holding an arrow key keeps moving focus; holding select repeats `onLongPress`
 - **BLoC architecture**: Clean, testable architecture using Flutter BLoC pattern
 
 ## Installation
@@ -180,6 +181,54 @@ ListView.builder(
   },
 )
 ```
+
+### Hold to Repeat
+
+Holding an arrow key repeats the focus movement, so a remote can scroll a long
+grid without one press per row. The first press always moves once immediately,
+then the key repeats after a short hold:
+
+```dart
+TvNavigationProvider(
+  child: MyApp(),
+)
+```
+
+Tune the timings on the provider, or opt out entirely to restore the previous
+one-press-per-key behavior:
+
+```dart
+TvNavigationProvider(
+  enableHoldToRepeat: true,        // default: true
+  holdToRepeatDelay: Duration(milliseconds: 450),   // hold before arrows repeat
+  holdToRepeatInterval: Duration(milliseconds: 90), // arrow repeat rate
+  longPressThreshold: Duration(milliseconds: 450),  // hold before select repeats
+  child: MyApp(),
+)
+```
+
+Repeats reported by the platform itself are ignored, so a remote that already
+auto-repeats does not move twice as fast.
+
+### Long Press
+
+`onSelect` always fires on a single press. To make select also repeat while
+held, opt the element in with `onLongPress`:
+
+```dart
+TVFocusable(
+  id: 'seek_forward',
+  onSelect: () => player.seekBy(const Duration(seconds: 10)),
+  onLongPress: () => player.seekBy(const Duration(seconds: 60)),
+  child: ListTile(title: Text('Seek forward')),
+)
+```
+
+Tapping fires `onSelect` once. Holding past `longPressThreshold` then repeats
+`onLongPress` at the repeat interval until the key is released.
+
+Elements without `onLongPress` never enter the repeat path, so the select key
+stays a plain on-press — the default is unchanged for every existing element.
 
 ## License
 

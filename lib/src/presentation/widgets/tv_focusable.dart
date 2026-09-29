@@ -23,6 +23,13 @@ class TVFocusable extends StatefulWidget {
   )? builder;
   final VoidCallback? onFocus;
   final VoidCallback? onSelect;
+
+  /// Called repeatedly while the select key is held down.
+  ///
+  /// When this is null the select key never enters the repeat path, so the
+  /// element behaves as a plain on-press.
+  final VoidCallback? onLongPress;
+
   final void Function(TvFocusDirection direction)? onBlur;
   final void Function(TvFocusDirection direction)? onNavigationRequest;
 
@@ -43,6 +50,7 @@ class TVFocusable extends StatefulWidget {
     this.builder,
     this.onFocus,
     this.onSelect,
+    this.onLongPress,
     this.onBlur,
     this.onNavigationRequest,
   });
@@ -60,6 +68,16 @@ class _TVFocusableState extends State<TVFocusable> {
         ? () {
             if (mounted) {
               widget.onSelect!();
+            }
+          }
+        : null;
+  }
+
+  VoidCallback? get _onLongPress {
+    return widget.onLongPress != null
+        ? () {
+            if (mounted) {
+              widget.onLongPress!();
             }
           }
         : null;
@@ -90,6 +108,7 @@ class _TVFocusableState extends State<TVFocusable> {
         oldWidget.autofocus != widget.autofocus ||
         oldWidget.onFocus != widget.onFocus ||
         oldWidget.onSelect != widget.onSelect ||
+        oldWidget.onLongPress != widget.onLongPress ||
         oldWidget.onBlur != widget.onBlur ||
         oldWidget.onNavigationRequest != widget.onNavigationRequest) {
       final tvFocusElement = TvFocusElement(
@@ -105,6 +124,7 @@ class _TVFocusableState extends State<TVFocusable> {
         autofocus: widget.autofocus,
         onFocus: widget.onFocus,
         onSelect: _onSelect,
+        onLongPress: _onLongPress,
         onBlur: widget.onBlur,
         onNavigationRequest: widget.onNavigationRequest,
       );
@@ -131,6 +151,7 @@ class _TVFocusableState extends State<TVFocusable> {
       autofocus: widget.autofocus,
       onFocus: widget.onFocus,
       onSelect: _onSelect,
+      onLongPress: _onLongPress,
       onBlur: widget.onBlur,
       onNavigationRequest: widget.onNavigationRequest,
     );
