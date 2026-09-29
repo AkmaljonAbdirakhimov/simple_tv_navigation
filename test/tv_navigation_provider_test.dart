@@ -63,6 +63,7 @@ Future<TvNavigationBloc> _mountSelect(
   WidgetTester tester, {
   VoidCallback? onSelect,
   VoidCallback? onLongPress,
+  VoidCallback? onLongPressEnd,
 }) async {
   late TvNavigationBloc bloc;
   await tester.pumpWidget(
@@ -80,7 +81,49 @@ Future<TvNavigationBloc> _mountSelect(
                 autofocus: true,
                 onSelect: onSelect,
                 onLongPress: onLongPress,
+                onLongPressEnd: onLongPressEnd,
                 child: const SizedBox(height: 20),
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  return bloc;
+}
+
+/// Two holdable elements in a chain, so focus can drift while select is held.
+/// Every callback reports which element it came from.
+Future<TvNavigationBloc> _mountPair(
+  WidgetTester tester, {
+  void Function(String id)? onSelect,
+  void Function(String id)? onLongPress,
+  void Function(String id)? onLongPressEnd,
+}) async {
+  late TvNavigationBloc bloc;
+  Widget item(String id, {bool autofocus = false}) => TVFocusable(
+        id: id,
+        autofocus: autofocus,
+        downId: id == 'a' ? 'b' : null,
+        onSelect: onSelect == null ? null : () => onSelect(id),
+        onLongPress: onLongPress == null ? null : () => onLongPress(id),
+        onLongPressEnd: onLongPressEnd == null ? null : () => onLongPressEnd(id),
+        child: const SizedBox(height: 20),
+      );
+  await tester.pumpWidget(
+    MaterialApp(
+      home: TvNavigationProvider(
+        holdToRepeatDelay: _holdDelay,
+        holdToRepeatInterval: _holdInterval,
+        longPressThreshold: _holdDelay,
+        child: Builder(
+          builder: (context) {
+            bloc = context.tvBloc;
+            return Scaffold(
+              body: Column(
+                children: [item('a', autofocus: true), item('b')],
               ),
             );
           },
@@ -216,39 +259,50 @@ void main() {
       await _unmount(tester);
     });
 
-    testWidgets('with onLongPress, a tap still fires onSelect exactly once',
+    testWidgets('a tap on a holdable element runs onSelect only',
         (tester) async {
       var selects = 0;
       var longPresses = 0;
+      var longPressEnds = 0;
       await _mountSelect(
         tester,
         onSelect: () => selects++,
         onLongPress: () => longPresses++,
+        onLongPressEnd: () => longPressEnds++,
       );
 
       await simulateKeyDownEvent(LogicalKeyboardKey.select);
       await tester.pump(_beforeThreshold);
 
+      // The tap is deferred to the release so a hold cannot also fire it.
+      expect(selects, 0);
+      expect(longPresses, 0);
+      expect(longPressEnds, 0);
+
+      await simulateKeyUpEvent(LogicalKeyboardKey.select);
+      await tester.pump();
+
       expect(selects, 1);
       expect(longPresses, 0);
+      // No hold ever started, so there is no end to report.
+      expect(longPressEnds, 0);
 
       await _unmount(tester);
     });
 
-    testWidgets('with onLongPress, holding repeats the long press',
-        (tester) async {
+    testWidgets('holding runs onLongPress and never onSelect', (tester) async {
       var selects = 0;
       var longPresses = 0;
+      var longPressEnds = 0;
       await _mountSelect(
         tester,
         onSelect: () => selects++,
         onLongPress: () => longPresses++,
+        onLongPressEnd: () => longPressEnds++,
       );
 
       await simulateKeyDownEvent(LogicalKeyboardKey.select);
       await tester.pump();
-      expect(selects, 1);
-      expect(longPresses, 0);
 
       // Crosses the 450ms threshold.
       await tester.pump(_holdDelay);
@@ -259,8 +313,45 @@ void main() {
 
       await simulateKeyUpEvent(LogicalKeyboardKey.select);
       await tester.pump(const Duration(seconds: 1));
+
       expect(longPresses, 2);
-      expect(selects, 1);
+      // The whole point: one hold never also fires the tap.
+      expect(selects, 0);
+      expect(longPressEnds, 1);
+
+      await _unmount(tester);
+    });
+
+    testWidgets('focus moving mid-hold cannot retarget the callbacks',
+        (tester) async {
+      final selects = <String>[];
+      final longPresses = <String>[];
+      final longPressEnds = <String>[];
+      final bloc = await _mountPair(
+        tester,
+        onSelect: selects.add,
+        onLongPress: longPresses.add,
+        onLongPressEnd: longPressEnds.add,
+      );
+      expect(_focusedId(bloc), 'a');
+
+      await simulateKeyDownEvent(LogicalKeyboardKey.select);
+      // Moved straight through the bloc: going through the key handler would
+      // cancel the select hold instead of racing it.
+      bloc.add(const MoveFocus(TvFocusDirection.down));
+      await tester.pump();
+      expect(_focusedId(bloc), 'b');
+
+      await tester.pump(_holdDelay);
+      // The press belongs to the element it started on.
+      expect(longPresses, ['a']);
+
+      await simulateKeyUpEvent(LogicalKeyboardKey.select);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(longPressEnds, ['a']);
+      // And the deferred tap must not land on whatever took the focus.
+      expect(selects, isEmpty);
 
       await _unmount(tester);
     });
