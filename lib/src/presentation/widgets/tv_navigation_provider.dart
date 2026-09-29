@@ -175,7 +175,10 @@ class _TvNavigationBlocBuilderState extends State<_TvNavigationBlocBuilder> {
 
   void _runHoldAction(VoidCallback action) {
     if (!mounted || !_navigationBloc.state.enabled) {
-      _cancelHold();
+      // End, not cancel: an element that changed state under this hold still
+      // has to learn the hold is over, or it stays mutated. _endHold only
+      // calls back while mounted, so the unmount case stays silent.
+      _endHold();
       return;
     }
     action();
@@ -228,19 +231,21 @@ class _TvNavigationBlocBuilderState extends State<_TvNavigationBlocBuilder> {
 
     // Releasing the key ends any in-flight hold.
     if (event is KeyUpEvent) {
+      // A key this widget does not own must never end a hold that another key
+      // is still holding, or a stray media key truncates a select press.
+      if (!_isHoldableKey(event.logicalKey)) return false;
       // Read the pending press before _endHold clears it.
       final target = _selectTarget;
       final pendingSelect = _selectHoldPending;
       final heldLong = _holdRunning;
-      final isSelect = _isHoldableKey(event.logicalKey);
       _endHold();
       // A holdable element defers its tap here, so a hold runs the long press
       // and never the tap. A quick tap still lands, paying only the duration
       // of the press itself instead of a fixed threshold.
-      if (pendingSelect && !heldLong && isSelect) {
+      if (pendingSelect && !heldLong) {
         target?.onSelect?.call();
       }
-      return isSelect;
+      return true;
     }
 
     // Only handle KeyDownEvent

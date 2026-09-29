@@ -355,5 +355,69 @@ void main() {
 
       await _unmount(tester);
     });
+
+    testWidgets('a key the widget does not own cannot end a running hold',
+        (tester) async {
+      var selects = 0;
+      var longPresses = 0;
+      var longPressEnds = 0;
+      await _mountSelect(
+        tester,
+        onSelect: () => selects++,
+        onLongPress: () => longPresses++,
+        onLongPressEnd: () => longPressEnds++,
+      );
+
+      await simulateKeyDownEvent(LogicalKeyboardKey.select);
+      await tester.pump(_holdDelay);
+      expect(longPresses, 1);
+
+      // A media key while select is still down: release must not truncate it.
+      await simulateKeyDownEvent(LogicalKeyboardKey.mediaPlayPause);
+      await simulateKeyUpEvent(LogicalKeyboardKey.mediaPlayPause);
+      await tester.pump();
+      expect(longPressEnds, 0);
+
+      await tester.pump(_holdInterval);
+      expect(longPresses, 2);
+
+      await simulateKeyUpEvent(LogicalKeyboardKey.select);
+      await tester.pump();
+      expect(longPressEnds, 1);
+      expect(selects, 0);
+
+      await _unmount(tester);
+    });
+
+    testWidgets('disabling navigation mid-hold still reports the end',
+        (tester) async {
+      var selects = 0;
+      var longPresses = 0;
+      var longPressEnds = 0;
+      final bloc = await _mountSelect(
+        tester,
+        onSelect: () => selects++,
+        onLongPress: () => longPresses++,
+        onLongPressEnd: () => longPressEnds++,
+      );
+
+      await simulateKeyDownEvent(LogicalKeyboardKey.select);
+      await tester.pump(_holdDelay);
+      expect(longPresses, 1);
+
+      // The hold keeps ticking into a disabled bloc: it has to stop, and the
+      // element has to hear about it so it can undo the change.
+      bloc.add(const SetEnabled(false));
+      await tester.pump(_holdInterval);
+      expect(longPresses, 1);
+      expect(longPressEnds, 1);
+
+      await simulateKeyUpEvent(LogicalKeyboardKey.select);
+      await tester.pump();
+      expect(longPressEnds, 1);
+      expect(selects, 0);
+
+      await _unmount(tester);
+    });
   });
 }
