@@ -224,8 +224,31 @@ TVFocusable(
 )
 ```
 
-Tapping fires `onSelect` once. Holding past `longPressThreshold` then repeats
-`onLongPress` at the repeat interval until the key is released.
+An element with `onLongPress` behaves like a Flutter button with both an `onTap`
+and an `onLongPress`, which a D-pad does not get from a gesture arena for free:
+
+| Press | `onSelect` | `onLongPress` | `onLongPressEnd` |
+| --- | --- | --- | --- |
+| released before `longPressThreshold` | once, on release | no | no |
+| held past the threshold | **never** | repeats until release | once, on release |
+| element has no `onLongPress` | once, on press | no | no |
+
+`onLongPress` and `onSelect` are mutually exclusive: one press runs one of them,
+never both. Because of that, an element that changes state under a hold needs
+`onLongPressEnd` to put it back:
+
+```dart
+TVFocusable(
+  id: 'video',
+  onSelect: toggleControls,
+  onLongPress: () => player.setPlaybackSpeed(2.0),
+  onLongPressEnd: () => player.setPlaybackSpeed(previousSpeed),
+  child: const VideoSurface(),
+)
+```
+
+Both callbacks are bound to the element that had focus when the key went down,
+so moving focus mid-hold cannot retarget them.
 
 Elements without `onLongPress` never enter the repeat path, so the select key
 stays a plain on-press — the default is unchanged for every existing element.

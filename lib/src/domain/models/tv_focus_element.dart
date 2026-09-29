@@ -18,6 +18,7 @@ class TvFocusElement extends Equatable {
   final VoidCallback? onFocus;
   final VoidCallback? onSelect;
   final VoidCallback? onLongPress;
+  final VoidCallback? onLongPressEnd;
   final void Function(TvFocusDirection direction)? onBlur;
   final void Function(TvFocusDirection direction)? onNavigationRequest;
 
@@ -36,6 +37,7 @@ class TvFocusElement extends Equatable {
     this.onFocus,
     this.onSelect,
     this.onLongPress,
+    this.onLongPressEnd,
     this.onBlur,
     this.onNavigationRequest,
   });
@@ -55,6 +57,7 @@ class TvFocusElement extends Equatable {
     VoidCallback? onFocus,
     VoidCallback? onSelect,
     VoidCallback? onLongPress,
+    VoidCallback? onLongPressEnd,
     void Function(TvFocusDirection direction)? onBlur,
     void Function(TvFocusDirection direction)? onNavigationRequest,
   }) {
@@ -74,6 +77,7 @@ class TvFocusElement extends Equatable {
       onFocus: onFocus ?? this.onFocus,
       onSelect: onSelect ?? this.onSelect,
       onLongPress: onLongPress ?? this.onLongPress,
+      onLongPressEnd: onLongPressEnd ?? this.onLongPressEnd,
       onBlur: onBlur ?? this.onBlur,
       onNavigationRequest: onNavigationRequest ?? this.onNavigationRequest,
     );
@@ -96,6 +100,7 @@ class TvFocusElement extends Equatable {
       onFocus,
       onSelect,
       onLongPress,
+      onLongPressEnd,
       onBlur,
       onNavigationRequest,
     ];

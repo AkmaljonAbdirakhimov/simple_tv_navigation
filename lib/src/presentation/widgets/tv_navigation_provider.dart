@@ -109,6 +109,17 @@ class _TvNavigationBlocBuilderState extends State<_TvNavigationBlocBuilder> {
   final remoteController = RemoteController();
   Timer? _holdTimer;
 
+  /// Runs on key up, but only for a hold that actually started, so an element
+  /// can undo whatever the hold changed.
+  VoidCallback? _holdEndCallback;
+  bool _holdRunning = false;
+
+  /// A select press on a holdable element defers its tap to key up. The element
+  /// is captured on key down so the tap and the long press can never land on
+  /// two different elements, which is what re-reading focus on release did.
+  bool _selectHoldPending = false;
+  TvFocusElement? _selectTarget;
+
   /// Keys this widget owns end to end, including the release that ends a hold.
   static bool _isHoldableKey(LogicalKeyboardKey key) {
     switch (key) {
@@ -140,11 +151,20 @@ class _TvNavigationBlocBuilderState extends State<_TvNavigationBlocBuilder> {
   ///
   /// The bloc is used instead of the context because the callback outlives the
   /// synchronous key handler and must stay safe across frames.
-  void _startHold(VoidCallback action, Duration delay) {
+  ///
+  /// [onEnd] runs when the key comes back up after the hold actually started,
+  /// which is the only signal an element gets to undo what the hold changed.
+  void _startHold(
+    VoidCallback action,
+    Duration delay, {
+    VoidCallback? onEnd,
+  }) {
     _cancelHold();
     if (!widget.enableHoldToRepeat) return;
 
+    _holdEndCallback = onEnd;
     _holdTimer = Timer(delay, () {
+      _holdRunning = true;
       _runHoldAction(action);
       _holdTimer = Timer.periodic(
         widget.holdToRepeatInterval,
@@ -155,15 +175,32 @@ class _TvNavigationBlocBuilderState extends State<_TvNavigationBlocBuilder> {
 
   void _runHoldAction(VoidCallback action) {
     if (!mounted || !_navigationBloc.state.enabled) {
-      _cancelHold();
+      // End, not cancel: an element that changed state under this hold still
+      // has to learn the hold is over, or it stays mutated. _endHold only
+      // calls back while mounted, so the unmount case stays silent.
+      _endHold();
       return;
     }
     action();
   }
 
+  /// Ends a hold on key up, telling the element when it had started one.
+  void _endHold() {
+    final onEnd = _holdEndCallback;
+    final wasRunning = _holdRunning;
+    _cancelHold();
+    if (wasRunning && onEnd != null && mounted) onEnd();
+  }
+
   void _cancelHold() {
     _holdTimer?.cancel();
     _holdTimer = null;
+    _holdEndCallback = null;
+    _holdRunning = false;
+    // Any hold taking over a pending select tap supersedes it: the release
+    // must not land a tap the user already turned into something else.
+    _selectHoldPending = false;
+    _selectTarget = null;
   }
 
   /// Moves focus once, then keeps moving in [direction] while held.
@@ -179,7 +216,9 @@ class _TvNavigationBlocBuilderState extends State<_TvNavigationBlocBuilder> {
   bool _handleKeyEvent(KeyEvent event) {
     // If TV navigation is disabled, don't handle any keys
     if (!_navigationBloc.state.enabled) {
-      _cancelHold();
+      // Still tell a running hold it ended, or an element that changed state
+      // under it would never get to undo the change.
+      _endHold();
       return false;
     }
 
@@ -192,8 +231,21 @@ class _TvNavigationBlocBuilderState extends State<_TvNavigationBlocBuilder> {
 
     // Releasing the key ends any in-flight hold.
     if (event is KeyUpEvent) {
-      _cancelHold();
-      return _isHoldableKey(event.logicalKey);
+      // A key this widget does not own must never end a hold that another key
+      // is still holding, or a stray media key truncates a select press.
+      if (!_isHoldableKey(event.logicalKey)) return false;
+      // Read the pending press before _endHold clears it.
+      final target = _selectTarget;
+      final pendingSelect = _selectHoldPending;
+      final heldLong = _holdRunning;
+      _endHold();
+      // A holdable element defers its tap here, so a hold runs the long press
+      // and never the tap. A quick tap still lands, paying only the duration
+      // of the press itself instead of a fixed threshold.
+      if (pendingSelect && !heldLong) {
+        target?.onSelect?.call();
+      }
+      return true;
     }
 
     // Only handle KeyDownEvent
@@ -221,20 +273,27 @@ class _TvNavigationBlocBuilderState extends State<_TvNavigationBlocBuilder> {
           break;
         case LogicalKeyboardKey.enter:
         case LogicalKeyboardKey.select:
-          // Read before selecting: without onLongPress the key stays a plain
-          // on-press and never enters the repeat path.
-          final repeatsOnHold =
-              _navigationBloc.state.currentlyFocusedElement?.onLongPress !=
-                  null;
-          context.selectCurrent();
-          if (repeatsOnHold) {
-            // Re-read the element on every tick: the focused element can
-            // change or unregister while the key is held.
+          // Holdable: the tap waits for key up, so holding the key runs the
+          // long press and never the tap. That mutual exclusion is what a
+          // gesture arena gives the phone for free and a D-pad never has, and
+          // without it a held key would fire both callbacks.
+          // Resolve the element once, on key down. Re-reading focus later loses
+          // the callback as soon as anything moves focus, and the tap would
+          // land on whatever element ended up focused instead of this one.
+          final element = _navigationBloc.state.currentlyFocusedElement;
+          final onLongPress = element?.onLongPress;
+          if (widget.enableHoldToRepeat && onLongPress != null) {
             _startHold(
-              () => _navigationBloc.state.currentlyFocusedElement?.onLongPress
-                  ?.call(),
+              onLongPress,
               widget.longPressThreshold,
+              onEnd: element?.onLongPressEnd,
             );
+            // After _startHold: it cancels first, and the cancel drops these.
+            _selectTarget = element;
+            _selectHoldPending = true;
+          } else {
+            // Not holdable, or repeats are off: unchanged, tap on key down.
+            context.selectCurrent();
           }
           handled = true;
           break;

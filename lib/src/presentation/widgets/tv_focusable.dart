@@ -29,6 +29,7 @@ class TVFocusable extends StatefulWidget {
   /// When this is null the select key never enters the repeat path, so the
   /// element behaves as a plain on-press.
   final VoidCallback? onLongPress;
+  final VoidCallback? onLongPressEnd;
 
   final void Function(TvFocusDirection direction)? onBlur;
   final void Function(TvFocusDirection direction)? onNavigationRequest;
@@ -51,6 +52,7 @@ class TVFocusable extends StatefulWidget {
     this.onFocus,
     this.onSelect,
     this.onLongPress,
+    this.onLongPressEnd,
     this.onBlur,
     this.onNavigationRequest,
   });
@@ -83,6 +85,16 @@ class _TVFocusableState extends State<TVFocusable> {
         : null;
   }
 
+  VoidCallback? get _onLongPressEnd {
+    return widget.onLongPressEnd != null
+        ? () {
+            if (mounted) {
+              widget.onLongPressEnd!();
+            }
+          }
+        : null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -109,6 +121,7 @@ class _TVFocusableState extends State<TVFocusable> {
         oldWidget.onFocus != widget.onFocus ||
         oldWidget.onSelect != widget.onSelect ||
         oldWidget.onLongPress != widget.onLongPress ||
+        oldWidget.onLongPressEnd != widget.onLongPressEnd ||
         oldWidget.onBlur != widget.onBlur ||
         oldWidget.onNavigationRequest != widget.onNavigationRequest) {
       final tvFocusElement = TvFocusElement(
@@ -125,6 +138,7 @@ class _TVFocusableState extends State<TVFocusable> {
         onFocus: widget.onFocus,
         onSelect: _onSelect,
         onLongPress: _onLongPress,
+        onLongPressEnd: _onLongPressEnd,
         onBlur: widget.onBlur,
         onNavigationRequest: widget.onNavigationRequest,
       );
@@ -152,6 +166,7 @@ class _TVFocusableState extends State<TVFocusable> {
       onFocus: widget.onFocus,
       onSelect: _onSelect,
       onLongPress: _onLongPress,
+      onLongPressEnd: _onLongPressEnd,
       onBlur: widget.onBlur,
       onNavigationRequest: widget.onNavigationRequest,
     );
